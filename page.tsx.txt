@@ -1,0 +1,7 @@
+import WalletManager from '../../components/wallet/WalletManager';
+import { useAuth } from '../../lib/auth/authContext';
+import { redirect } from 'next/navigation';
+
+export default function WalletPage() {
+  return <WalletManager />;
+}

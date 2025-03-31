@@ -1,0 +1,182 @@
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { useState } from 'react';
+import { useAuth } from '../../lib/auth/authContext';
+import { useRouter } from 'next/navigation';
+
+export default function AuthForms() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  const { login, register, isLoading } = useAuth();
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    try {
+      // Validation de base
+      if (!email || !password) {
+        throw new Error('Veuillez remplir tous les champs obligatoires');
+      }
+
+      if (!isLogin) {
+        if (!username) {
+          throw new Error('Le nom d\'utilisateur est obligatoire');
+        }
+        
+        if (password !== confirmPassword) {
+          throw new Error('Les mots de passe ne correspondent pas');
+        }
+        
+        if (password.length < 8) {
+          throw new Error('Le mot de passe doit contenir au moins 8 caractères');
+        }
+      }
+
+      if (isLogin) {
+        // Connexion
+        await login(email, password);
+        setSuccess('Connexion réussie! Redirection...');
+        // Redirection vers la page d'accueil après connexion
+        setTimeout(() => {
+          router.push('/');
+        }, 1500);
+      } else {
+        // Inscription
+        await register(username, email, password);
+        setSuccess('Inscription réussie! Vous pouvez maintenant vous connecter.');
+        setIsLogin(true);
+        setUsername('');
+        setPassword('');
+        setConfirmPassword('');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-900 to-purple-900 p-4">
+      <Card className="w-full max-w-md bg-gray-900 p-8 rounded-xl shadow-2xl">
+        <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">
+          {isLogin ? 'Connexion' : 'Inscription'}
+        </h2>
+        
+        {error && (
+          <div className="bg-red-900 text-white p-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="bg-green-900 text-white p-3 rounded-lg mb-4">
+            {success}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              placeholder="votre@email.com"
+              required
+            />
+          </div>
+          
+          {!isLogin && (
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1">
+                Nom d'utilisateur
+              </label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder="Choisissez un nom d'utilisateur"
+                required
+              />
+            </div>
+          )}
+          
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+              Mot de passe
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              placeholder={isLogin ? "Votre mot de passe" : "Créez un mot de passe"}
+              required
+            />
+          </div>
+          
+          {!isLogin && (
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
+                Confirmer le mot de passe
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder="Confirmez votre mot de passe"
+                required
+              />
+            </div>
+          )}
+          
+          <Button
+            type="submit"
+            className="w-full py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Chargement...' : isLogin ? 'Se connecter' : 'S\'inscrire'}
+          </Button>
+        </form>
+        
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+              setSuccess('');
+            }}
+            className="text-yellow-400 hover:text-yellow-300 text-sm"
+          >
+            {isLogin ? 'Pas encore de compte ? Inscrivez-vous' : 'Déjà un compte ? Connectez-vous'}
+          </button>
+        </div>
+        
+        {isLogin && (
+          <div className="mt-4 text-center">
+            <button className="text-gray-400 hover:text-gray-300 text-sm">
+              Mot de passe oublié ?
+            </button>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

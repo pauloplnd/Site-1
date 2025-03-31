@@ -1,0 +1,157 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+// Interface pour les données utilisateur
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  credits: number;
+}
+
+// Interface pour le contexte d'authentification
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
+  updateCredits: (newAmount: number) => void;
+}
+
+// Création du contexte avec des valeurs par défaut
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isLoading: false,
+  error: null,
+  login: async () => {},
+  register: async () => {},
+  logout: () => {},
+  updateCredits: () => {},
+});
+
+// Hook personnalisé pour utiliser le contexte d'authentification
+export const useAuth = () => useContext(AuthContext);
+
+// Props pour le fournisseur d'authentification
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Fournisseur d'authentification
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Vérification de l'authentification au chargement
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Vérification du localStorage pour une session existante
+        const storedUser = localStorage.getItem('casinoUser');
+        
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (err) {
+        console.error('Erreur lors de la vérification de l\'authentification:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // Fonction de connexion
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Simulation d'une requête API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Dans une vraie application, cela serait une requête à l'API
+      // Pour la démo, nous simulons une connexion réussie
+      const mockUser: User = {
+        id: 1,
+        username: email.split('@')[0],
+        email,
+        isAdmin: false,
+        credits: 1000,
+      };
+
+      // Stockage de l'utilisateur dans le localStorage
+      localStorage.setItem('casinoUser', JSON.stringify(mockUser));
+      
+      // Mise à jour de l'état
+      setUser(mockUser);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la connexion');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction d'inscription
+  const register = async (username: string, email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Simulation d'une requête API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Dans une vraie application, cela serait une requête à l'API
+      // Pour la démo, nous simulons une inscription réussie
+      const mockUser: User = {
+        id: Math.floor(Math.random() * 1000),
+        username,
+        email,
+        isAdmin: false,
+        credits: 1000,
+      };
+
+      // Nous ne connectons pas automatiquement l'utilisateur après l'inscription
+      // Il devra se connecter avec ses identifiants
+      return;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction de déconnexion
+  const logout = () => {
+    localStorage.removeItem('casinoUser');
+    setUser(null);
+  };
+
+  // Fonction de mise à jour des crédits
+  const updateCredits = (newAmount: number) => {
+    if (user) {
+      const updatedUser = { ...user, credits: newAmount };
+      localStorage.setItem('casinoUser', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    }
+  };
+
+  // Valeur du contexte
+  const value = {
+    user,
+    isLoading,
+    error,
+    login,
+    register,
+    logout,
+    updateCredits,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

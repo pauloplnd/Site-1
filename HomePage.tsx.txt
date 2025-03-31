@@ -1,0 +1,115 @@
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import Link from 'next/link';
+
+export default function HomePage() {
+  return (
+    <div className="flex flex-col items-center p-4 bg-gradient-to-b from-blue-900 to-purple-900 min-h-screen text-white">
+      <header className="w-full max-w-6xl mx-auto py-8 text-center">
+        <h1 className="text-5xl font-bold mb-4 text-yellow-400">Casino Royal</h1>
+        <p className="text-xl text-gray-300">Votre casino virtuel de luxe</p>
+      </header>
+
+      <main className="w-full max-w-6xl mx-auto flex-grow">
+        {/* Bannière principale */}
+        <div className="relative w-full h-64 md:h-96 bg-gradient-to-r from-purple-800 to-blue-800 rounded-xl mb-12 overflow-hidden">
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center p-6 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-yellow-400">Bienvenue dans notre Casino Virtuel</h2>
+            <p className="text-lg md:text-xl mb-6">Découvrez nos jeux passionnants et tentez votre chance !</p>
+            <Button className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold rounded-lg text-lg">
+              Commencer à jouer
+            </Button>
+          </div>
+        </div>
+
+        {/* Jeux disponibles */}
+        <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">Nos Jeux</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {/* Machine à sous */}
+          <Card className="bg-gradient-to-b from-purple-900 to-indigo-900 rounded-xl overflow-hidden shadow-xl transition-transform hover:scale-105">
+            <div className="h-48 bg-purple-800 flex items-center justify-center">
+              <span className="text-6xl">🎰</span>
+            </div>
+            <div className="p-6">
+              <h3 className="text-2xl font-bold mb-2 text-yellow-400">Lucky Slots</h3>
+              <p className="text-gray-300 mb-4">Faites tourner les rouleaux et alignez les symboles pour gagner gros !</p>
+              <Link href="/games/slots" passHref>
+                <Button className="w-full py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-lg">
+                  Jouer maintenant
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Blackjack */}
+          <Card className="bg-gradient-to-b from-green-900 to-green-700 rounded-xl overflow-hidden shadow-xl transition-transform hover:scale-105">
+            <div className="h-48 bg-green-800 flex items-center justify-center">
+              <span className="text-6xl">🃏</span>
+            </div>
+            <div className="p-6">
+              <h3 className="text-2xl font-bold mb-2 text-yellow-400">Blackjack VIP</h3>
+              <p className="text-gray-300 mb-4">Affrontez le croupier et atteignez 21 sans le dépasser !</p>
+              <Link href="/games/blackjack" passHref>
+                <Button className="w-full py-2 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg">
+                  Jouer maintenant
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Roulette */}
+          <Card className="bg-gradient-to-b from-red-900 to-red-700 rounded-xl overflow-hidden shadow-xl transition-transform hover:scale-105">
+            <div className="h-48 bg-red-800 flex items-center justify-center">
+              <span className="text-6xl">🎲</span>
+            </div>
+            <div className="p-6">
+              <h3 className="text-2xl font-bold mb-2 text-yellow-400">Roulette Européenne</h3>
+              <p className="text-gray-300 mb-4">Placez vos paris et regardez la bille tourner sur la roue !</p>
+              <Link href="/games/roulette" passHref>
+                <Button className="w-full py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg">
+                  Jouer maintenant
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+
+        {/* Avantages */}
+        <div className="bg-gray-900 rounded-xl p-8 mb-12">
+          <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">Pourquoi nous choisir</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-4xl mb-4">💰</div>
+              <h3 className="text-xl font-bold mb-2">Bonus généreux</h3>
+              <p className="text-gray-300">Profitez de nos bonus de bienvenue et promotions régulières.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-xl font-bold mb-2">Sécurité garantie</h3>
+              <p className="text-gray-300">Vos données et transactions sont toujours protégées.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-4">🎮</div>
+              <h3 className="text-xl font-bold mb-2">Jeux de qualité</h3>
+              <p className="text-gray-300">Des jeux développés avec les meilleures technologies.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Appel à l'action */}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4 text-yellow-400">Prêt à tenter votre chance ?</h2>
+          <p className="text-xl text-gray-300 mb-6">Inscrivez-vous maintenant et recevez 1000 crédits gratuits !</p>
+          <Button className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold rounded-lg text-lg">
+            S'inscrire
+          </Button>
+        </div>
+      </main>
+
+      <footer className="w-full max-w-6xl mx-auto py-8 text-center border-t border-gray-800">
+        <p className="text-gray-400">© 2025 Casino Royal. Tous droits réservés.</p>
+        <p className="text-gray-500 text-sm mt-2">Jeu responsable. Réservé aux personnes majeures.</p>
+      </footer>
+    </div>
+  );
+}

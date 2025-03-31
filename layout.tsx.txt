@@ -1,0 +1,24 @@
+import Navbar from '../components/Navbar';
+import '../styles/globals.css';
+import { AuthProvider } from '../lib/auth/authContext';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="fr">
+      <head>
+        <title>Casino Royal</title>
+        <meta name="description" content="Votre casino virtuel de luxe" />
+      </head>
+      <body>
+        <AuthProvider>
+          <Navbar />
+          {children}
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}

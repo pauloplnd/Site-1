@@ -1,0 +1,134 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { AuthProvider, useAuth } from '../../src/lib/auth/authContext';
+
+// Mock pour WalletManager
+vi.mock('../../src/components/wallet/WalletManager', () => ({
+  default: vi.fn(() => <div>Wallet Manager Mock</div>)
+}));
+
+describe('Gestion de la monnaie virtuelle', () => {
+  // Mock localStorage
+  const localStorageMock = (() => {
+    let store: Record<string, string> = {};
+    return {
+      getItem: vi.fn((key: string) => store[key] || null),
+      setItem: vi.fn((key: string, value: string) => {
+        store[key] = value.toString();
+      }),
+      removeItem: vi.fn((key: string) => {
+        delete store[key];
+      }),
+      clear: vi.fn(() => {
+        store = {};
+      }),
+    };
+  })();
+
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+  });
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    localStorageMock.clear();
+  });
+
+  it('devrait permettre de mettre à jour les crédits d\'un utilisateur', async () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+    
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    
+    // Connexion
+    await act(async () => {
+      await result.current.login('test@example.com', 'password123');
+    });
+    
+    expect(result.current.user?.credits).toBe(1000);
+    
+    // Mise à jour des crédits (dépôt)
+    act(() => {
+      result.current.updateCredits(1500);
+    });
+    
+    expect(result.current.user?.credits).toBe(1500);
+    
+    // Mise à jour des crédits (retrait)
+    act(() => {
+      result.current.updateCredits(1000);
+    });
+    
+    expect(result.current.user?.credits).toBe(1000);
+  });
+
+  it('ne devrait pas mettre à jour les crédits si l\'utilisateur n\'est pas connecté', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+    
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    
+    // Vérification que l'utilisateur n'est pas connecté
+    expect(result.current.user).toBeNull();
+    
+    // Tentative de mise à jour des crédits
+    act(() => {
+      result.current.updateCredits(1500);
+    });
+    
+    // Vérification que localStorage n'a pas été appelé
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
+  });
+
+  it('devrait stocker les crédits mis à jour dans le localStorage', async () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+    
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    
+    // Connexion
+    await act(async () => {
+      await result.current.login('test@example.com', 'password123');
+    });
+    
+    // Mise à jour des crédits
+    act(() => {
+      result.current.updateCredits(2000);
+    });
+    
+    // Vérification que localStorage a été appelé avec les bonnes valeurs
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'casinoUser',
+      expect.stringContaining('"credits":2000')
+    );
+  });
+
+  it('devrait conserver les autres informations utilisateur lors de la mise à jour des crédits', async () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+    
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    
+    // Connexion
+    await act(async () => {
+      await result.current.login('test@example.com', 'password123');
+    });
+    
+    const initialUser = result.current.user;
+    
+    // Mise à jour des crédits
+    act(() => {
+      result.current.updateCredits(2000);
+    });
+    
+    // Vérification que les autres informations utilisateur sont conservées
+    expect(result.current.user?.id).toBe(initialUser?.id);
+    expect(result.current.user?.username).toBe(initialUser?.username);
+    expect(result.current.user?.email).toBe(initialUser?.email);
+    expect(result.current.user?.isAdmin).toBe(initialUser?.isAdmin);
+  });
+});

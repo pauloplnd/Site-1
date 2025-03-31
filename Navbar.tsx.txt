@@ -1,0 +1,69 @@
+import { useAuth } from '../../lib/auth/authContext';
+import Link from 'next/link';
+import { Button } from '../ui/Button';
+
+export default function Navbar() {
+  const { user, logout } = useAuth();
+
+  return (
+    <nav className="bg-gray-900 text-white shadow-md">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center">
+              <span className="text-2xl font-bold text-yellow-400">Casino Royal</span>
+            </Link>
+            <div className="hidden md:block ml-10">
+              <div className="flex items-center space-x-4">
+                <Link href="/" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                  Accueil
+                </Link>
+                <Link href="/games/slots" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                  Machine à Sous
+                </Link>
+                <Link href="/games/blackjack" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                  Blackjack
+                </Link>
+                <Link href="/games/roulette" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                  Roulette
+                </Link>
+                {user && (
+                  <Link href="/wallet" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                    Portefeuille
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link href="/wallet" className="bg-gray-800 px-3 py-1 rounded-md hover:bg-gray-700">
+                  <span className="text-yellow-400 font-bold">{user.credits.toFixed(2)} €</span>
+                </Link>
+                <div className="text-sm">
+                  Bonjour, <span className="font-bold">{user.username}</span>
+                </div>
+                <Button 
+                  onClick={logout}
+                  className="px-3 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md text-sm font-medium"
+                >
+                  Déconnexion
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link href="/auth" className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md text-sm font-medium">
+                  Connexion
+                </Link>
+                <Link href="/auth" className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 text-black rounded-md text-sm font-medium">
+                  Inscription
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+}

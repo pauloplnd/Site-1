@@ -1,0 +1,16 @@
+export default function Card({ 
+  children, 
+  className = '', 
+  ...props 
+}: React.HTMLAttributes<HTMLDivElement> & { 
+  className?: string 
+}) {
+  return (
+    <div
+      className={`bg-gray-800 rounded-lg shadow-lg overflow-hidden ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}

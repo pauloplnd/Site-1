@@ -1,0 +1,7 @@
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import HomePage from '../../components/HomePage';
+
+export default function Home() {
+  return <HomePage />;
+}

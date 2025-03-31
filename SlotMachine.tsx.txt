@@ -1,0 +1,294 @@
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { useState, useEffect } from 'react';
+import { spin, SpinResult, SlotSymbol } from '../../lib/games/slotMachine';
+
+export default function SlotMachine() {
+  const [betAmount, setBetAmount] = useState<number>(1);
+  const [activePaylines, setActivePaylines] = useState<number>(20);
+  const [credits, setCredits] = useState<number>(1000);
+  const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
+  const [isSpinning, setIsSpinning] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
+
+  // Fonction pour effectuer un tour de machine à sous
+  const handleSpin = () => {
+    // Vérification que le joueur a assez de crédits
+    if (credits < betAmount * activePaylines) {
+      setMessage('Crédits insuffisants pour jouer!');
+      return;
+    }
+
+    // Animation de spin
+    setIsSpinning(true);
+    setMessage('Les rouleaux tournent...');
+    
+    // Déduction de la mise
+    setCredits(prev => prev - (betAmount * activePaylines));
+
+    // Simulation d'un délai pour l'animation
+    setTimeout(() => {
+      try {
+        // Calcul du résultat
+        const result = spin(betAmount, activePaylines);
+        setSpinResult(result);
+        
+        // Ajout des gains
+        setCredits(prev => prev + result.totalWin);
+        
+        // Message de résultat
+        if (result.totalWin > 0) {
+          setMessage(`Félicitations! Vous avez gagné ${result.totalWin} crédits!`);
+        } else {
+          setMessage('Pas de chance cette fois. Réessayez!');
+        }
+      } catch (error) {
+        setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+      } finally {
+        setIsSpinning(false);
+      }
+    }, 2000);
+  };
+
+  // Fonction pour augmenter la mise
+  const increaseBet = () => {
+    if (betAmount < 10) {
+      setBetAmount(prev => prev + 0.5);
+    }
+  };
+
+  // Fonction pour diminuer la mise
+  const decreaseBet = () => {
+    if (betAmount > 0.5) {
+      setBetAmount(prev => prev - 0.5);
+    }
+  };
+
+  // Fonction pour augmenter le nombre de lignes actives
+  const increasePaylines = () => {
+    if (activePaylines < 20) {
+      setActivePaylines(prev => prev + 1);
+    }
+  };
+
+  // Fonction pour diminuer le nombre de lignes actives
+  const decreasePaylines = () => {
+    if (activePaylines > 1) {
+      setActivePaylines(prev => prev - 1);
+    }
+  };
+
+  // Fonction pour obtenir la couleur d'un symbole
+  const getSymbolColor = (symbol: SlotSymbol): string => {
+    switch (symbol) {
+      case SlotSymbol.CHERRY:
+        return 'text-red-500';
+      case SlotSymbol.LEMON:
+        return 'text-yellow-400';
+      case SlotSymbol.ORANGE:
+        return 'text-orange-500';
+      case SlotSymbol.PLUM:
+        return 'text-purple-500';
+      case SlotSymbol.BELL:
+        return 'text-yellow-600';
+      case SlotSymbol.BAR:
+        return 'text-blue-500';
+      case SlotSymbol.SEVEN:
+        return 'text-red-600';
+      case SlotSymbol.DIAMOND:
+        return 'text-cyan-400';
+      case SlotSymbol.WILD:
+        return 'text-green-500';
+      default:
+        return 'text-gray-700';
+    }
+  };
+
+  // Fonction pour obtenir l'emoji d'un symbole
+  const getSymbolEmoji = (symbol: SlotSymbol): string => {
+    switch (symbol) {
+      case SlotSymbol.CHERRY:
+        return '🍒';
+      case SlotSymbol.LEMON:
+        return '🍋';
+      case SlotSymbol.ORANGE:
+        return '🍊';
+      case SlotSymbol.PLUM:
+        return '🍇';
+      case SlotSymbol.BELL:
+        return '🔔';
+      case SlotSymbol.BAR:
+        return '📊';
+      case SlotSymbol.SEVEN:
+        return '7️⃣';
+      case SlotSymbol.DIAMOND:
+        return '💎';
+      case SlotSymbol.WILD:
+        return '🃏';
+      default:
+        return '❓';
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center p-4 bg-gradient-to-b from-purple-900 to-indigo-900 min-h-screen text-white">
+      <h1 className="text-4xl font-bold mb-8 text-yellow-400 mt-8">Lucky Slots</h1>
+      
+      {/* Affichage des crédits */}
+      <div className="bg-black p-4 rounded-lg mb-8 w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-yellow-400">Crédits: {credits.toFixed(2)}</h2>
+      </div>
+      
+      {/* Affichage des rouleaux */}
+      <Card className="bg-black p-6 rounded-lg mb-8 w-full max-w-2xl">
+        <div className="grid grid-cols-5 gap-2 mb-4">
+          {spinResult ? (
+            // Affichage des symboles après un spin
+            spinResult.reels.map((reel, reelIndex) => (
+              <div key={reelIndex} className="flex flex-col">
+                {reel.map((symbol, symbolIndex) => (
+                  <div 
+                    key={`${reelIndex}-${symbolIndex}`} 
+                    className={`
+                      flex items-center justify-center h-20 bg-gray-800 rounded-lg text-4xl
+                      ${getSymbolColor(symbol)}
+                      ${spinResult.paylineHits.some(hit => 
+                        hit.positions.some(pos => pos[0] === reelIndex && pos[1] === symbolIndex)
+                      ) ? 'border-2 border-yellow-400 animate-pulse' : ''}
+                    `}
+                  >
+                    {getSymbolEmoji(symbol)}
+                  </div>
+                ))}
+              </div>
+            ))
+          ) : (
+            // Affichage par défaut avant le premier spin
+            Array(5).fill(null).map((_, reelIndex) => (
+              <div key={reelIndex} className="flex flex-col">
+                {Array(3).fill(null).map((_, symbolIndex) => (
+                  <div 
+                    key={`${reelIndex}-${symbolIndex}`} 
+                    className="flex items-center justify-center h-20 bg-gray-800 rounded-lg text-4xl text-gray-600"
+                  >
+                    ?
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Affichage du message */}
+        <div className="text-center mb-4 h-8">
+          <p className={`text-lg ${message.includes('Félicitations') ? 'text-green-400' : 'text-white'}`}>
+            {message}
+          </p>
+        </div>
+        
+        {/* Contrôles de mise */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="bg-gray-800 p-3 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm">Mise par ligne:</span>
+              <div className="flex items-center">
+                <Button 
+                  onClick={decreaseBet} 
+                  disabled={betAmount <= 0.5 || isSpinning}
+                  className="px-2 py-1 bg-red-700 text-white rounded-l"
+                >
+                  -
+                </Button>
+                <span className="px-3 py-1 bg-gray-700">{betAmount.toFixed(2)}</span>
+                <Button 
+                  onClick={increaseBet} 
+                  disabled={betAmount >= 10 || isSpinning}
+                  className="px-2 py-1 bg-green-700 text-white rounded-r"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            <div className="text-xs text-gray-400">
+              Mise totale: {(betAmount * activePaylines).toFixed(2)}
+            </div>
+          </div>
+          
+          <div className="bg-gray-800 p-3 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm">Lignes actives:</span>
+              <div className="flex items-center">
+                <Button 
+                  onClick={decreasePaylines} 
+                  disabled={activePaylines <= 1 || isSpinning}
+                  className="px-2 py-1 bg-red-700 text-white rounded-l"
+                >
+                  -
+                </Button>
+                <span className="px-3 py-1 bg-gray-700">{activePaylines}</span>
+                <Button 
+                  onClick={increasePaylines} 
+                  disabled={activePaylines >= 20 || isSpinning}
+                  className="px-2 py-1 bg-green-700 text-white rounded-r"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            <div className="text-xs text-gray-400">
+              Maximum: 20 lignes
+            </div>
+          </div>
+        </div>
+        
+        {/* Bouton de spin */}
+        <Button 
+          onClick={handleSpin} 
+          disabled={isSpinning || credits < betAmount * activePaylines}
+          className="w-full py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold rounded-lg text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSpinning ? 'Tournent...' : 'TOURNER'}
+        </Button>
+      </Card>
+      
+      {/* Tableau des gains */}
+      <Card className="bg-black p-4 rounded-lg mb-8 w-full max-w-md">
+        <h3 className="text-xl font-bold mb-2 text-center text-yellow-400">Tableau des gains</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">💎💎💎💎💎</span>
+            <span>x500</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">7️⃣7️⃣7️⃣7️⃣7️⃣</span>
+            <span>x200</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🔔🔔🔔🔔🔔</span>
+            <span>x60</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🍇🍇🍇🍇🍇</span>
+            <span>x40</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🍊🍊🍊🍊🍊</span>
+            <span>x30</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🍋🍋🍋🍋🍋</span>
+            <span>x25</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🍒🍒🍒🍒🍒</span>
+            <span>x20</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🃏🃏🃏</span>
+            <span>Joker (remplace tout)</span>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}

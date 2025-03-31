@@ -1,0 +1,428 @@
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { useState, useEffect } from 'react';
+import { 
+  initializeGame, 
+  playerHit, 
+  playerStand, 
+  playerDouble, 
+  playerSplit, 
+  playDealerTurn,
+  canSplit,
+  canDouble,
+  BlackjackGameState,
+  Card as PlayingCard,
+  CardSuit,
+  CardRank
+} from '../../lib/games/blackjack';
+
+export default function Blackjack() {
+  const [credits, setCredits] = useState<number>(1000);
+  const [betAmount, setBetAmount] = useState<number>(10);
+  const [gameState, setGameState] = useState<BlackjackGameState | null>(null);
+  const [message, setMessage] = useState<string>('Placez votre mise et commencez une nouvelle partie.');
+  const [isDealing, setIsDealing] = useState<boolean>(false);
+
+  // Fonction pour démarrer une nouvelle partie
+  const startNewGame = () => {
+    // Vérification que le joueur a assez de crédits
+    if (credits < betAmount) {
+      setMessage('Crédits insuffisants pour jouer!');
+      return;
+    }
+
+    // Animation de distribution
+    setIsDealing(true);
+    setMessage('Distribution des cartes...');
+    
+    // Déduction de la mise
+    setCredits(prev => prev - betAmount);
+
+    // Simulation d'un délai pour l'animation
+    setTimeout(() => {
+      try {
+        // Initialisation du jeu
+        const newGameState = initializeGame(betAmount);
+        setGameState(newGameState);
+        
+        // Vérification des blackjacks
+        if (newGameState.playerHands[0].isBlackjack) {
+          handleDealerTurn();
+        } else {
+          setMessage('À vous de jouer! Hit, Stand, Double ou Split?');
+        }
+      } catch (error) {
+        setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+      } finally {
+        setIsDealing(false);
+      }
+    }, 1000);
+  };
+
+  // Fonction pour l'action "hit"
+  const handleHit = () => {
+    if (!gameState || !gameState.isPlayerTurn) return;
+    
+    try {
+      const newState = playerHit({ ...gameState });
+      setGameState(newState);
+      
+      const currentHand = newState.playerHands[newState.currentHandIndex];
+      if (currentHand && currentHand.isBusted) {
+        setMessage(`Bust! Votre main dépasse 21 (${currentHand.score}).`);
+      } else if (!newState.isPlayerTurn) {
+        handleDealerTurn();
+      }
+    } catch (error) {
+      setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+    }
+  };
+
+  // Fonction pour l'action "stand"
+  const handleStand = () => {
+    if (!gameState || !gameState.isPlayerTurn) return;
+    
+    try {
+      const newState = playerStand({ ...gameState });
+      setGameState(newState);
+      
+      if (!newState.isPlayerTurn) {
+        handleDealerTurn();
+      }
+    } catch (error) {
+      setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+    }
+  };
+
+  // Fonction pour l'action "double"
+  const handleDouble = () => {
+    if (!gameState || !gameState.isPlayerTurn) return;
+    
+    // Vérification que le joueur a assez de crédits
+    if (credits < betAmount) {
+      setMessage('Crédits insuffisants pour doubler!');
+      return;
+    }
+    
+    try {
+      // Déduction de la mise supplémentaire
+      setCredits(prev => prev - betAmount);
+      
+      const newState = playerDouble({ ...gameState });
+      setGameState(newState);
+      
+      if (!newState.isPlayerTurn) {
+        handleDealerTurn();
+      }
+    } catch (error) {
+      setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+    }
+  };
+
+  // Fonction pour l'action "split"
+  const handleSplit = () => {
+    if (!gameState || !gameState.isPlayerTurn) return;
+    
+    // Vérification que le joueur a assez de crédits
+    if (credits < betAmount) {
+      setMessage('Crédits insuffisants pour splitter!');
+      return;
+    }
+    
+    try {
+      // Déduction de la mise supplémentaire
+      setCredits(prev => prev - betAmount);
+      
+      const newState = playerSplit({ ...gameState });
+      setGameState(newState);
+      setMessage('Main splittée! Jouez la première main.');
+    } catch (error) {
+      setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+    }
+  };
+
+  // Fonction pour le tour du croupier
+  const handleDealerTurn = () => {
+    if (!gameState) return;
+    
+    setMessage('Tour du croupier...');
+    
+    // Simulation d'un délai pour l'animation
+    setTimeout(() => {
+      try {
+        const finalState = playDealerTurn({ ...gameState });
+        setGameState(finalState);
+        
+        // Calcul des gains totaux
+        let totalPayout = 0;
+        finalState.results.forEach(result => {
+          totalPayout += result.payout;
+        });
+        
+        // Ajout des gains
+        setCredits(prev => prev + totalPayout);
+        
+        // Message de résultat
+        if (totalPayout > 0) {
+          const profit = totalPayout - (betAmount * finalState.playerHands.length);
+          if (profit > 0) {
+            setMessage(`Félicitations! Vous avez gagné ${profit.toFixed(2)} crédits!`);
+          } else {
+            setMessage('Égalité! Votre mise vous est rendue.');
+          }
+        } else {
+          setMessage('Perdu! Le croupier gagne.');
+        }
+      } catch (error) {
+        setMessage(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
+      }
+    }, 1000);
+  };
+
+  // Fonction pour augmenter la mise
+  const increaseBet = () => {
+    if (betAmount < 100) {
+      setBetAmount(prev => prev + 5);
+    }
+  };
+
+  // Fonction pour diminuer la mise
+  const decreaseBet = () => {
+    if (betAmount > 5) {
+      setBetAmount(prev => prev - 5);
+    }
+  };
+
+  // Fonction pour obtenir l'emoji d'une carte
+  const getCardEmoji = (card: PlayingCard | null): string => {
+    if (!card) return '🂠';
+    
+    const suitEmoji = {
+      [CardSuit.HEARTS]: '♥️',
+      [CardSuit.DIAMONDS]: '♦️',
+      [CardSuit.CLUBS]: '♣️',
+      [CardSuit.SPADES]: '♠️',
+    };
+    
+    return `${card.rank}${suitEmoji[card.suit]}`;
+  };
+
+  // Fonction pour obtenir la couleur d'une carte
+  const getCardColor = (card: PlayingCard | null): string => {
+    if (!card) return 'text-gray-400';
+    
+    return card.suit === CardSuit.HEARTS || card.suit === CardSuit.DIAMONDS
+      ? 'text-red-500'
+      : 'text-white';
+  };
+
+  // Fonction pour afficher une carte
+  const renderCard = (card: PlayingCard | null, isHidden: boolean = false) => {
+    return (
+      <div className={`
+        flex items-center justify-center
+        w-16 h-24 bg-white rounded-lg shadow-md
+        ${isHidden ? 'bg-gradient-to-br from-blue-800 to-blue-900' : 'bg-white'}
+      `}>
+        {isHidden ? (
+          <span className="text-2xl">🂠</span>
+        ) : (
+          <span className={`text-2xl font-bold ${getCardColor(card)}`}>
+            {getCardEmoji(card)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col items-center p-4 bg-gradient-to-b from-green-900 to-green-700 min-h-screen text-white">
+      <h1 className="text-4xl font-bold mb-8 text-yellow-400 mt-8">Blackjack VIP</h1>
+      
+      {/* Affichage des crédits */}
+      <div className="bg-black p-4 rounded-lg mb-8 w-full max-w-md text-center">
+        <h2 className="text-2xl font-bold text-yellow-400">Crédits: {credits.toFixed(2)}</h2>
+      </div>
+      
+      {/* Table de jeu */}
+      <Card className="bg-green-800 p-6 rounded-lg mb-8 w-full max-w-2xl">
+        {/* Main du croupier */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold mb-2">Croupier</h3>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {gameState ? (
+              <>
+                {renderCard(gameState.dealerHand.cards[0], false)}
+                {renderCard(
+                  gameState.dealerHand.cards[1], 
+                  gameState.isPlayerTurn && gameState.gameStatus !== 'complete'
+                )}
+                {gameState.dealerHand.cards.slice(2).map((card, index) => (
+                  <div key={`dealer-${index + 2}`}>
+                    {renderCard(card, false)}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="text-gray-400">En attente de la partie...</div>
+            )}
+          </div>
+          {gameState && !gameState.isPlayerTurn && (
+            <div className="text-lg">
+              Score: {gameState.dealerHand.score}
+              {gameState.dealerHand.isBusted && ' (Bust!)'}
+              {gameState.dealerHand.isBlackjack && ' (Blackjack!)'}
+            </div>
+          )}
+        </div>
+        
+        {/* Main(s) du joueur */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold mb-2">Votre main</h3>
+          {gameState ? (
+            gameState.playerHands.map((hand, handIndex) => (
+              <div 
+                key={`hand-${handIndex}`} 
+                className={`
+                  mb-4 p-2 rounded
+                  ${gameState.currentHandIndex === handIndex && gameState.isPlayerTurn ? 'bg-green-700' : ''}
+                `}
+              >
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {hand.cards.map((card, cardIndex) => (
+                    <div key={`player-${handIndex}-${cardIndex}`}>
+                      {renderCard(card, false)}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-lg">
+                  Score: {hand.score}
+                  {hand.isSoft && ' (Soft)'}
+                  {hand.isBusted && ' (Bust!)'}
+                  {hand.isBlackjack && ' (Blackjack!)'}
+                </div>
+                {gameState.results.length > 0 && (
+                  <div className={`
+                    text-lg font-bold mt-1
+                    ${gameState.results[handIndex].result === 'win' || gameState.results[handIndex].result === 'blackjack' 
+                      ? 'text-yellow-400' 
+                      : gameState.results[handIndex].result === 'push' 
+                        ? 'text-blue-300' 
+                        : 'text-red-400'}
+                  `}>
+                    {gameState.results[handIndex].result === 'win' && 'Gagné!'}
+                    {gameState.results[handIndex].result === 'blackjack' && 'Blackjack!'}
+                    {gameState.results[handIndex].result === 'push' && 'Égalité'}
+                    {gameState.results[handIndex].result === 'lose' && 'Perdu'}
+                    {' '}
+                    {gameState.results[handIndex].payout > 0 && `(${gameState.results[handIndex].payout.toFixed(2)})`}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">En attente de la partie...</div>
+          )}
+        </div>
+        
+        {/* Affichage du message */}
+        <div className="text-center mb-4 h-8">
+          <p className={`text-lg ${message.includes('Félicitations') ? 'text-yellow-400' : 'text-white'}`}>
+            {message}
+          </p>
+        </div>
+        
+        {/* Contrôles de jeu */}
+        {!gameState || gameState.gameStatus === 'complete' ? (
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-gray-800 p-3 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Mise:</span>
+                <div className="flex items-center">
+                  <Button 
+                    onClick={decreaseBet} 
+                    disabled={betAmount <= 5 || isDealing}
+                    className="px-2 py-1 bg-red-700 text-white rounded-l"
+                  >
+                    -
+                  </Button>
+                  <span className="px-3 py-1 bg-gray-700">{betAmount.toFixed(2)}</span>
+                  <Button 
+                    onClick={increaseBet} 
+                    disabled={betAmount >= 100 || isDealing}
+                    className="px-2 py-1 bg-green-700 text-white rounded-r"
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={startNewGame} 
+              disabled={isDealing || credits < betAmount}
+              className="py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Nouvelle partie
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <Button 
+              onClick={handleHit} 
+              disabled={!gameState.isPlayerTurn}
+              className="py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Hit
+            </Button>
+            
+            <Button 
+              onClick={handleStand} 
+              disabled={!gameState.isPlayerTurn}
+              className="py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Stand
+            </Button>
+            
+            <Button 
+              onClick={handleDouble} 
+              disabled={
+                !gameState.isPlayerTurn || 
+                !canDouble(gameState.playerHands[gameState.currentHandIndex]) ||
+                credits < betAmount
+              }
+              className="py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Double
+            </Button>
+            
+            <Button 
+              onClick={handleSplit} 
+              disabled={
+                !gameState.isPlayerTurn || 
+                !canSplit(gameState.playerHands[gameState.currentHandIndex]) ||
+                credits < betAmount
+              }
+              className="py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Split
+            </Button>
+          </div>
+        )}
+      </Card>
+      
+      {/* Règles du jeu */}
+      <Card className="bg-black p-4 rounded-lg mb-8 w-full max-w-md">
+        <h3 className="text-xl font-bold mb-2 text-center text-yellow-400">Règles du Blackjack</h3>
+        <ul className="text-sm space-y-1">
+          <li>• Le but est d'avoir une main plus proche de 21 que le croupier sans dépasser 21.</li>
+          <li>• Les cartes numériques valent leur valeur faciale, les figures valent 10, l'As vaut 1 ou 11.</li>
+          <li>• Blackjack: As + 10/Figure (paie 3:2)</li>
+          <li>• Le croupier tire jusqu'à 17 ou plus.</li>
+          <li>• Double: doubler votre mise et recevoir une seule carte.</li>
+          <li>• Split: séparer une paire en deux mains distinctes.</li>
+        </ul>
+      </Card>
+    </div>
+  );
+}
